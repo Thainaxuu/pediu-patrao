@@ -13,18 +13,33 @@ public class DataInitializer {
     @Bean
     CommandLineRunner initDatabase(UsuarioRepository repo) {
         return args -> {
+            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
             if (repo.findByUsername("admin").isEmpty()) {
-
-                BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-
-                Usuario user = new Usuario();
-                user.setUsername("admin");
-                user.setPassword(encoder.encode("teste123"));
-
-                repo.save(user);
-
+                Usuario admin = new Usuario();
+                admin.setUsername("admin");
+                admin.setPassword(encoder.encode("admin123"));
+                admin.setRole("ADMIN");
+                repo.save(admin);
                 System.out.println("Usuário admin criado!");
+            }
+
+            if (repo.findByUsername("gerente").isEmpty()) {
+                Usuario gerente = new Usuario();
+                gerente.setUsername("gerente");
+                gerente.setPassword(encoder.encode("gerente123"));
+                gerente.setRole("GERENTE");
+                repo.save(gerente);
+                System.out.println("Usuário gerente criado!");
+            }
+
+            if (repo.findByUsername("atendente").isEmpty()) {
+                Usuario atendente = new Usuario();
+                atendente.setUsername("atendente");
+                atendente.setPassword(encoder.encode("atendente123"));
+                atendente.setRole("ATENDENTE");
+                repo.save(atendente);
+                System.out.println("Usuário atendente criado!");
             }
         };
     }
