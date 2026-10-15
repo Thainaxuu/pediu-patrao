@@ -1,29 +1,23 @@
 package com.umc.pediupatrao.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+
 import com.umc.pediupatrao.entity.Pedido;
 import com.umc.pediupatrao.repository.PedidoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import java.util.List;
 
 @Service
 public class PedidoService {
 
-    @Autowired
-    private PedidoRepository pedidoRepository;
+    private final PedidoRepository pedidoRepository;
 
-    public Pedido criarPedido(Pedido pedido) {
-        return pedidoRepository.save(pedido);
-    }
-
-    public List<Pedido> listarPedidos() {
-        return pedidoRepository.findAll();
-    }
-
-    public Pedido atualizarStatus(String id, String status) {
-        Pedido pedido = pedidoRepository.findById(id).orElseThrow();
-        pedido.setStatus(status);
-        return pedidoRepository.save(pedido);
+    public PedidoService(PedidoRepository pedidoRepository) {
+        this.pedidoRepository = pedidoRepository;
     }
 
 }
