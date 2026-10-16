@@ -1,77 +1,205 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
 <head>
     <title>Lista de Pedidos</title>
 </head>
+
 <body>
+    <div th:fragment="content">
 
-<div th:fragment="content">
-
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold mb-0">
-            <i class="bi bi-bag me-2 text-primary"></i>Pedidos
-        </h2>
-    </div>
-
-    <!-- Mensagens de feedback -->
-    <div class="alert alert-success alert-dismissible fade show" th:if="${sucesso}" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i>
-        <span th:text="${sucesso}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    <div class="alert alert-danger alert-dismissible fade show" th:if="${erro}" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-        <span th:text="${erro}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-
-    <!-- Tabela -->
-    <div class="card shadow-sm">
-        <div class="card-body p-0">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-dark">
-                    <tr>
-                        <th class="ps-4">ID</th>
-                        <th>Cliente ID</th>
-                        <th>Tipo de Pizza</th>
-                        <th>Sabor</th>
-                        <th>Quantidade</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Lista vazia -->
-                    <tr th:if="${#lists.isEmpty(pedidos)}">
-                        <td colspan="6" class="text-center text-muted py-5">
-                            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-                            Nenhum pedido encontrado.
-                        </td>
-                    </tr>
-                    <!-- Linhas -->
-                    <tr th:each="pedido : ${pedidos}">
-                        <td class="ps-4 text-muted" th:text="${pedido.id}"></td>
-                        <td th:text="${pedido.clienteId}"></td>
-                        <td th:text="${pedido.tipoPizza}"></td>
-                        <td th:text="${pedido.sabor}"></td>
-                        <td th:text="${pedido.quantidade}"></td>
-                        <td>
-                            <span class="badge"
-                                  th:classappend="${pedido.status == 'ENTREGUE'} ? 'bg-success' :
-                                                  (${pedido.status == 'CANCELADO'} ? 'bg-danger' :
-                                                  (${pedido.status == 'EM_PREPARO'} ? 'bg-warning text-dark' : 'bg-secondary'))"
-                                  th:text="${pedido.status}">
-                            </span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold mb-0">
+                <i class="bi bi-bag me-2 text-primary"></i>Pedidos
+            </h2>
+            <button sec:authorize="hasAnyRole('ATENDENTE', 'GERENTE')"
+                    type="button"
+                    class="btn btn-primary fw-bold"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalNovoPedido">
+                <i class="bi bi-plus-circle me-1"></i> Novo Pedido
+            </button>
         </div>
-        <div class="card-footer text-muted small" th:if="${!#lists.isEmpty(pedidos)}">
-            Total: <strong th:text="${#lists.size(pedidos)}"></strong> pedido(s)
+
+        <div class="alert alert-success alert-dismissible fade show" th:if="${sucesso}" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <span th:text="${sucesso}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
+
+        <div class="alert alert-danger alert-dismissible fade show" th:if="${erro}" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <span th:text="${erro}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th class="ps-4">ID</th>
+                                <th>Cliente</th>
+                                <th>Itens</th>
+                                <th>Valor Total</th>
+                                <th>Responsável Entrada</th>
+                                <th>Data/Hora Entrada</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(pedidos)}">
+                                <td colspan="7" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                    Nenhum pedido encontrado.
+                                </td>
+                            </tr>
+
+                            <tr th:each="pedido : ${pedidos}">
+                                <td class="ps-4 text-muted fw-bold" th:text="${pedido.id}">#1001</td>
+                                <td th:text="${pedido.cliente != null ? pedido.cliente.nome : (pedido.clienteId != null ? pedido.clienteId : 'Não informado')}">Cliente</td>
+                                <td>
+                                    <ul class="list-unstyled mb-0 small">
+                                        <li th:each="item : ${pedido.itens}">
+                                            <span class="fw-bold" th:text="${item.quantidade}">1</span>x
+                                            <span th:text="${item.produto != null ? item.produto.nome : 'Produto'}">Pizza</span>
+                                        </li>
+                                    </ul>
+                                </td>
+                                <td class="fw-bold text-success"
+                                    th:text="${pedido.valorTotal != null ? 'R$ ' + #numbers.formatDecimal(pedido.valorTotal, 1, 'POINT', 2, 'COMMA') : 'R$ 0,00'}">
+                                    R$ 0,00
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border"
+                                          th:text="${pedido.usuarioResponsavel != null ? pedido.usuarioResponsavel : 'Sistema'}">atendente</span>
+                                </td>
+                                <td class="small text-muted"
+                                    th:text="${pedido.dataHoraEntrada != null ? #temporals.format(pedido.dataHoraEntrada, 'dd/MM/yyyy HH:mm') : '-'}">
+                                    23/09/2026 14:35
+                                </td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${pedido.status == 'FINALIZADO' or pedido.status == 'ENTREGUE'} ? 'bg-success' :
+                                                          (${pedido.status == 'CANCELADO'} ? 'bg-danger' :
+                                                          (${pedido.status == 'EM PREPARAÇÃO' or pedido.status == 'EM_PREPARO'} ? 'bg-warning text-dark' : 'bg-secondary'))"
+                                          th:text="${pedido.status}">RECEBIDO</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer text-muted small" th:if="${!#lists.isEmpty(pedidos)}">
+                Total: <strong th:text="${#lists.size(pedidos)}"></strong> pedido(s)
+            </div>
+        </div>
+
+        <div class="modal fade" id="modalNovoPedido" tabindex="-1" aria-labelledby="modalNovoPedidoLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title fw-bold" id="modalNovoPedidoLabel">
+                            <i class="bi bi-cart-plus me-2"></i>Cadastrar Novo Pedido
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <form th:action="@{/pedidos/salvar}" method="POST">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="clienteId" class="form-label fw-bold">Cliente <span class="text-danger">*</span></label>
+                                <select id="clienteId" name="clienteId" class="form-select" required>
+                                    <option value="" disabled selected>Selecione o cliente...</option>
+                                    <option th:each="c : ${clientes}"
+                                            th:value="${c.id}"
+                                            th:text="${c.nome + ' - ' + c.telefone}">Cliente</option>
+                                </select>
+                            </div>
+
+                            <h6 class="fw-bold mb-2">Itens do Pedido</h6>
+                            <div class="table-responsive mb-2">
+                                <table class="table table-bordered align-middle" id="tabelaItens">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Produto</th>
+                                            <th style="width: 130px;">Quantidade</th>
+                                            <th style="width: 60px;" class="text-center">Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <select name="produtoIds[]" class="form-select form-select-sm" required>
+                                                    <option value="" disabled selected>Selecione o produto...</option>
+                                                    <option th:each="p : ${produtos}"
+                                                            th:value="${p.id}"
+                                                            th:text="${p.nome + ' - R$ ' + p.preco}">Produto</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="number" name="quantidades[]" class="form-control form-control-sm" value="1" min="1" required />
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removerLinha(this)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <button type="button" class="btn btn-outline-secondary btn-sm mb-3" onclick="adicionarLinha()">
+                                <i class="bi bi-plus-lg me-1"></i> Adicionar Outro Item
+                            </button>
+
+                            <div class="alert alert-info border-0 mb-0 small">
+                                <i class="bi bi-info-circle-fill me-1"></i>
+                                <strong>Registro Automático:</strong> O responsável pela entrada será o usuário autenticado
+                                (<strong sec:authentication="name">usuário</strong>) e a data/hora de entrada será gerada pelo servidor.
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-success fw-bold">
+                                <i class="bi bi-check-lg me-1"></i> Salvar Pedido
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function adicionarLinha() {
+                var tbody = document.getElementById("tabelaItens").getElementsByTagName('tbody');
+                var primeiraLinha = tbody.rows;
+                var novaLinha = primeiraLinha.cloneNode(true);
+
+                novaLinha.querySelector('select').selectedIndex = 0;
+                novaLinha.querySelector('input[type="number"]').value = 1;
+
+                tbody.appendChild(novaLinha);
+            }
+
+            function removerLinha(btn) {
+                var tbody = document.getElementById("tabelaItens").getElementsByTagName('tbody');
+                if (tbody.rows.length > 1) {
+                    var linha = btn.closest('tr');
+                    linha.remove();
+                } else {
+                    alert("O pedido deve conter pelo menos um item.");
+                }
+            }
+        </script>
+
     </div>
-
-</div>
-
 </body>
+
 </html>
