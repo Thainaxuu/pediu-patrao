@@ -1,0 +1,34 @@
+<div th:fragment="content">
+
+    <h2>Registros de Auditoria do Sistema</h2>
+
+    <table class="table table-striped table-hover align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Data/Hora</th>
+                <th>Usuário</th>
+                <th>Perfil</th>
+                <th>Operação</th>
+                <th>Entidade (ID)</th>
+                <th>Campo</th>
+                <th>Valor Anterior</th>
+                <th>Valor Novo</th>
+                <th>Justificativa</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="reg : ${registros}">
+                <td th:text="${#temporals.format(reg.dataHora, 'dd/MM/yyyy HH:mm:ss')}">23/09/2026 14:35</td>
+                <td class="fw-bold" th:text="${reg.usuario}">atendente01</td>
+                <td><span class="badge bg-secondary" th:text="${reg.perfilUsuario}">ATENDENTE</span></td>
+                <td th:text="${reg.tipoOperacao}">ALTERAÇÃO DE CLIENTE</td>
+                <td th:text="${reg.entidade + ' (' + reg.entidadeId + ')'}">Cliente (#10)</td>
+                <td th:text="${reg.campoAlterado != null ? reg.campoAlterado : '-'}">endereco</td>
+                <td class="text-danger" th:text="${reg.valorAnterior != null ? reg.valorAnterior : '-'}">Rua A</td>
+                <td class="text-success" th:text="${reg.valorNovo != null ? reg.valorNovo : '-'}">Av. B</td>
+                <td th:text="${reg.justificativa != null ? reg.justificativa : '-'}">-</td>
+            </tr>
+        </tbody>
+    </table>
+
+</div>

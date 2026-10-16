@@ -11,6 +11,9 @@
         <h2 class="fw-bold mb-0">
             <i class="bi bi-bag me-2 text-primary"></i>Pedidos
         </h2>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoPedidoModal">
+            <i class="bi bi-plus-lg me-1"></i>Novo Pedido
+        </button>
     </div>
 
     <!-- Mensagens de feedback -->
@@ -68,6 +71,65 @@
         </div>
         <div class="card-footer text-muted small" th:if="${!#lists.isEmpty(pedidos)}">
             Total: <strong th:text="${#lists.size(pedidos)}"></strong> pedido(s)
+        </div>
+    </div>
+
+    <!-- Modal: Novo Pedido -->
+    <div class="modal fade" id="novoPedidoModal" tabindex="-1" aria-labelledby="novoPedidoModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/pedidos/salvar}" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="novoPedidoModalLabel">
+                            <i class="bi bi-bag-plus me-2 text-primary"></i>Novo Pedido
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+
+                        <div class="mb-3">
+                            <label for="clienteId" class="form-label">Cliente</label>
+                            <select class="form-select" id="clienteId" name="clienteId" required
+                                    onchange="this.form.nomeCliente.value = this.value ? this.options[this.selectedIndex].text : ''">
+                                <option value="">Selecione um cliente</option>
+                                <option th:each="c : ${clientes}" th:value="${c.id}" th:text="${c.nome}"></option>
+                            </select>
+                            <input type="hidden" name="nomeCliente" value="">
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="tipoPizza" class="form-label">Tipo de Pizza</label>
+                                <input type="text" class="form-control" id="tipoPizza" name="tipoPizza" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="sabor" class="form-label">Sabor</label>
+                                <input type="text" class="form-control" id="sabor" name="sabor" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="quantidade" class="form-label">Quantidade</label>
+                                <input type="number" class="form-control" id="quantidade" name="quantidade"
+                                       min="1" step="1" value="1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="precoUnitario" class="form-label">Preço Unitário (R$)</label>
+                                <input type="number" class="form-control" id="precoUnitario" name="precoUnitario"
+                                       min="0.01" step="0.01" placeholder="0,00" required>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>Registrar Pedido
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
