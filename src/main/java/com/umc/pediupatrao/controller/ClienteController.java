@@ -22,7 +22,7 @@ public class ClienteController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluirCliente(@PathVariable String id) {
-        clienteService.excluir(id);
+        clienteService.deletar(id);
         return ResponseEntity.noContent().build();
     }
 

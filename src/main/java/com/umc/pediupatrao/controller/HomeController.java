@@ -1,24 +1,30 @@
 package com.umc.pediupatrao.controller;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.umc.pediupatrao.entity.Cliente;
-import com.umc.pediupatrao.entity.Pedido;
-import com.umc.pediupatrao.entity.Produto;
-import com.umc.pediupatrao.entity.Usuario;
-import com.umc.pediupatrao.service.ClienteService;
-import com.umc.pediupatrao.service.PedidoService;
-import com.umc.pediupatrao.service.ProdutoService;
-import com.umc.pediupatrao.service.UsuarioService;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.umc.pediupatrao.entity.Cliente;
+import com.umc.pediupatrao.entity.Pedido;
+import com.umc.pediupatrao.entity.Produto;
+import com.umc.pediupatrao.entity.Usuario;
+import com.umc.pediupatrao.service.AuditoriaService;
+import com.umc.pediupatrao.service.ClienteService;
+import com.umc.pediupatrao.service.PedidoService;
+import com.umc.pediupatrao.service.ProdutoService;
+import com.umc.pediupatrao.service.UsuarioService;
 
 @Controller
 public class HomeController {
@@ -37,6 +43,10 @@ public class HomeController {
     @Autowired
     private UsuarioService usuarioService;
 
+    @Autowired
+    private AuditoriaService auditoriaService;
+
+
     @GetMapping("/login")
     public String login() {
         return "login";
@@ -48,10 +58,8 @@ public class HomeController {
         return "layout";
     }
 
-    // ========================
-    // USUÁRIOS
-    // ========================
     @GetMapping("/usuarios")
+    @PreAuthorize("hasRole('ADMIN')")
     public String listarUsuarios(Model model) {
         List<Usuario> usuarios = (List<Usuario>) usuarioService.listarTodos();
         model.addAttribute("usuarios", usuarios);
@@ -61,6 +69,7 @@ public class HomeController {
     }
 
     @GetMapping("/usuarios/novo")
+    @PreAuthorize("hasRole('ADMIN')")
     public String novoUsuarioForm(Model model) {
         model.addAttribute("usuario", new Usuario());
         model.addAttribute("content", "usuarios/form :: content");
@@ -68,8 +77,8 @@ public class HomeController {
     }
 
     @GetMapping("/usuarios/editar/{id}")
-    public String editarUsuarioForm(@PathVariable String id, Model model,
-            RedirectAttributes redirectAttributes) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public String editarUsuarioForm(@PathVariable String id, Model model, RedirectAttributes redirectAttributes) {
         boolean encontrado = usuarioService.buscarPorId(id).map(u -> {
             model.addAttribute("usuario", u);
             return true;
@@ -85,47 +94,82 @@ public class HomeController {
     }
 
     @PostMapping("/usuarios/salvar")
-    public String salvarUsuario(@ModelAttribute Usuario usuario,
-            RedirectAttributes redirectAttributes) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public String salvarUsuario(@ModelAttribute Usuario usuario, RedirectAttributes redirectAttributes) {
         usuarioService.salvarUsuario(usuario);
         redirectAttributes.addFlashAttribute("sucesso", "Usuário criado com sucesso!");
         return "redirect:/usuarios";
     }
 
     @PostMapping("/usuarios/editar/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public String atualizarUsuario(@PathVariable String id,
-            @ModelAttribute Usuario usuario,
-            RedirectAttributes redirectAttributes) {
-        usuarioService.atualizarUsuario(id, usuario);
+                                   @ModelAttribute Usuario usuario,
+                                   RedirectAttributes redirectAttributes) {
+        usuario.setId(id);
+        usuarioService.salvarUsuario(usuario);
         redirectAttributes.addFlashAttribute("sucesso", "Usuário atualizado com sucesso!");
         return "redirect:/usuarios";
     }
 
     @PostMapping("/usuarios/deletar/{id}")
-    public String deletarUsuario(@PathVariable String id,
-            RedirectAttributes redirectAttributes) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public String deletarUsuario(@PathVariable String id, RedirectAttributes redirectAttributes) {
         usuarioService.deletarUsuario(id);
         redirectAttributes.addFlashAttribute("sucesso", "Usuário removido com sucesso!");
         return "redirect:/usuarios";
     }
 
-    // ========================
-    // PEDIDOS
-    // ========================
     @GetMapping("/pedidos")
-    public String pedidos(Model model) {
+    @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE', 'ATENDENTE')")
+    public String listarPedidos(Model model) {
         List<Pedido> pedidos = pedidoService.listarPedidos();
+        List<Cliente> clientes = clienteService.listarClientes();
+        List<Produto> produtos = produtoService.listarProdutos();
+
         model.addAttribute("pedidos", pedidos);
+        model.addAttribute("clientes", clientes);
+        model.addAttribute("produtos", produtos);
+        model.addAttribute("novoPedido", new Pedido());
         model.addAttribute("content", "pedidos :: content");
         log.info("Carregando fragmento: pedidos :: content");
         return "layout";
     }
 
-    // ========================
-    // PRODUTOS
-    // ========================
+    @PostMapping("/pedidos/salvar")
+    @PreAuthorize("hasAnyRole('ATENDENTE', 'GERENTE')")
+    public String salvarPedido(@ModelAttribute Pedido pedido,
+                               Authentication authentication,
+                               RedirectAttributes redirectAttributes) {
+        try {
+            String usuarioLogado = authentication.getName();
+            pedidoService.criarPedido(pedido, usuarioLogado);
+            redirectAttributes.addFlashAttribute("sucesso", "Pedido registrado com sucesso!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("erro", "Erro ao registrar pedido: " + e.getMessage());
+        }
+        return "redirect:/pedidos";
+    }
+
+    @PostMapping("/pedidos/status/{id}")
+    @PreAuthorize("hasAnyRole('ATENDENTE', 'GERENTE')")
+    public String atualizarStatusPedido(@PathVariable String id,
+                                        @RequestParam String novoStatus,
+                                        Authentication authentication,
+                                        RedirectAttributes redirectAttributes) {
+        try {
+            String usuarioLogado = authentication.getName();
+            pedidoService.atualizarStatus(id, novoStatus, usuarioLogado);
+            redirectAttributes.addFlashAttribute("sucesso", "Status do pedido alterado para " + novoStatus + " com sucesso!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("erro", e.getMessage());
+        }
+        return "redirect:/pedidos";
+    }
+
     @GetMapping("/produtos")
-    public String produtos(Model model) {
+    @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE', 'ATENDENTE')")
+    public String listarProdutos(Model model) {
         List<Produto> produtos = produtoService.listarProdutos();
         model.addAttribute("produtos", produtos);
         model.addAttribute("content", "produtos/lista :: content");
@@ -133,11 +177,9 @@ public class HomeController {
         return "layout";
     }
 
-    // ========================
-    // CLIENTES
-    // ========================
     @GetMapping("/clientes")
-    public String clientes(Model model) {
+    @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE', 'ATENDENTE')")
+    public String listarClientes(Model model) {
         List<Cliente> clientes = clienteService.listarClientes();
         model.addAttribute("clientes", clientes);
         model.addAttribute("content", "clientes/lista :: content");
@@ -146,6 +188,7 @@ public class HomeController {
     }
 
     @GetMapping("/clientes/novo")
+    @PreAuthorize("hasAnyRole('ATENDENTE', 'GERENTE')")
     public String novoClienteForm(Model model) {
         model.addAttribute("cliente", new Cliente());
         model.addAttribute("content", "clientes/form :: content");
@@ -153,16 +196,16 @@ public class HomeController {
     }
 
     @PostMapping("/clientes/salvar")
-    public String salvarCliente(@ModelAttribute Cliente cliente,
-            RedirectAttributes redirectAttributes) {
+    @PreAuthorize("hasAnyRole('ATENDENTE', 'GERENTE')")
+    public String salvarCliente(@ModelAttribute Cliente cliente, RedirectAttributes redirectAttributes) {
         clienteService.salvar(cliente);
         redirectAttributes.addFlashAttribute("sucesso", "Cliente criado com sucesso!");
         return "redirect:/clientes";
     }
 
     @GetMapping("/clientes/editar/{id}")
-    public String editarClienteForm(@PathVariable String id, Model model,
-            RedirectAttributes redirectAttributes) {
+    @PreAuthorize("hasAnyRole('ATENDENTE', 'GERENTE')")
+    public String editarClienteForm(@PathVariable String id, Model model, RedirectAttributes redirectAttributes) {
         boolean encontrado = clienteService.buscarPorId(id).map(c -> {
             model.addAttribute("cliente", c);
             return true;
@@ -178,18 +221,16 @@ public class HomeController {
     }
 
     @PostMapping("/clientes/editar/{id}")
+    @PreAuthorize("hasAnyRole('ATENDENTE', 'GERENTE')")
     public String atualizarCliente(@PathVariable String id,
-            @ModelAttribute Cliente cliente,
-            RedirectAttributes redirectAttributes) {
+                                   @ModelAttribute Cliente cliente,
+                                   RedirectAttributes redirectAttributes) {
         cliente.setId(id);
         clienteService.salvar(cliente);
         redirectAttributes.addFlashAttribute("sucesso", "Cliente atualizado com sucesso!");
         return "redirect:/clientes";
     }
 
-    // ========================
-    // OUTRAS ROTAS
-    // ========================
     @GetMapping("/configuracoes")
     public String configuracoes(Model model) {
         model.addAttribute("content", "configuracoes :: content");
@@ -202,7 +243,16 @@ public class HomeController {
     }
 
     @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public String admin() {
         return "admin";
+    }
+
+    @GetMapping("/auditoria")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE')")
+    public String listarAuditoria(Model model) {    
+        model.addAttribute("registros", auditoriaService.listarTodas());
+        model.addAttribute("content", "auditoria/lista :: content");
+        return "layout";
     }
 }
