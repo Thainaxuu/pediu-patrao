@@ -67,7 +67,8 @@
                     <select id="role" class="form-select" th:field="*{role}" required>
                         <option value="" disabled>Selecione um perfil</option>
                         <option value="ADMIN">ADMIN</option>
-                        <option value="USER">USER</option>
+                        <option value="USER">GERENTE</option>
+                        <option value="ATENDENTE">ATENDENTE</option>
                     </select>
                 </div>
 
@@ -85,7 +86,6 @@
     </div>
 
     <script>
-        // Toggle mostrar/ocultar senha
         document.getElementById('togglePassword').addEventListener('click', function () {
             const input = document.getElementById('password');
             const icon  = document.getElementById('eyeIcon');
