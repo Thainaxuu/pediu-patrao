@@ -1,19 +1,31 @@
 package com.umc.pediupatrao.entity;
 
-import jakarta.persistence.Entity;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 @Document(collection = "pedidos")
-@Entity
 public class Pedido {
+
     @Id
     private String id;
-    private String clienteId;
-    private String tipoPizza;
+
+    private Cliente cliente;
+    private List<ItemPedido> itens = new ArrayList<>();
+    private Double valorTotal;
+    private Double desconto;
     private String status;
-    private int quantidade;
-    private String sabor;
+    private LocalDateTime dataHoraEntrada;
+    private String usuarioResponsavel;
+    private LocalDateTime dataHoraSaida;
+    private String usuarioResponsavelSaida;
+    private String justificativaCancelamento;
+
+    public Pedido() {
+    }
 
     public String getId() {
         return id;
@@ -23,20 +35,36 @@ public class Pedido {
         this.id = id;
     }
 
-    public String getClienteId() {
-        return clienteId;
+    public Cliente getCliente() {
+        return cliente;
     }
 
-    public void setClienteId(String clienteId) {
-        this.clienteId = clienteId;
+    public void setCliente(Cliente cliente) {
+        this.cliente = cliente;
     }
 
-    public String getTipoPizza() {
-        return tipoPizza;
+    public List<ItemPedido> getItens() {
+        return itens;
     }
 
-    public void setTipoPizza(String tipoPizza) {
-        this.tipoPizza = tipoPizza;
+    public void setItens(List<ItemPedido> itens) {
+        this.itens = itens;
+    }
+
+    public Double getValorTotal() {
+        return valorTotal;
+    }
+
+    public void setValorTotal(Double valorTotal) {
+        this.valorTotal = valorTotal;
+    }
+
+    public Double getDesconto() {
+        return desconto;
+    }
+
+    public void setDesconto(Double desconto) {
+        this.desconto = desconto;
     }
 
     public String getStatus() {
@@ -47,21 +75,43 @@ public class Pedido {
         this.status = status;
     }
 
-    public int getQuantidade() {
-        return quantidade;
+    public LocalDateTime getDataHoraEntrada() {
+        return dataHoraEntrada;
     }
 
-    public void setQuantidade(int quantidade) {
-        this.quantidade = quantidade;
+    public void setDataHoraEntrada(LocalDateTime dataHoraEntrada) {
+        this.dataHoraEntrada = dataHoraEntrada;
     }
 
-    public String getSabor() {
-        return sabor;
+    public String getUsuarioResponsavel() {
+        return usuarioResponsavel;
     }
 
-    public void setSabor(String sabor) {
-        this.sabor = sabor;
+    public void setUsuarioResponsavel(String usuarioResponsavel) {
+        this.usuarioResponsavel = usuarioResponsavel;
     }
-    
-    
+
+    public LocalDateTime getDataHoraSaida() {
+        return dataHoraSaida;
+    }
+
+    public void setDataHoraSaida(LocalDateTime dataHoraSaida) {
+        this.dataHoraSaida = dataHoraSaida;
+    }
+
+    public String getUsuarioResponsavelSaida() {
+        return usuarioResponsavelSaida;
+    }
+
+    public void setUsuarioResponsavelSaida(String usuarioResponsavelSaida) {
+        this.usuarioResponsavelSaida = usuarioResponsavelSaida;
+    }
+
+    public String getJustificativaCancelamento() {
+        return justificativaCancelamento;
+    }
+
+    public void setJustificativaCancelamento(String justificativaCancelamento) {
+        this.justificativaCancelamento = justificativaCancelamento;
+    }
 }
