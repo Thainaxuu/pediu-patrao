@@ -2,6 +2,7 @@ package com.umc.pediupatrao.config;
 
 import com.umc.pediupatrao.entity.Usuario;
 import com.umc.pediupatrao.repository.UsuarioRepository;
+
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -4,6 +4,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Document(collection = "pedidos")
 public class Pedido {
@@ -11,37 +13,28 @@ public class Pedido {
     @Id
     private String id;
 
+    // Dados do Cliente
     private String clienteId;
+    private String nomeCliente;
+
+    // Dados do Item / Pizza (mantendo compatibilidade com seu modelo)
     private String tipoPizza;
     private String sabor;
     private int quantidade;
-    private Double precoUnitario;
+    private Double precoUnitario = 0.0;
 
-    private Double descontoPercentual = 0.0;
+    // Suporte para lista de itens (RF02)
+    private List<itemPedido> itens = new ArrayList<>();
+
     private Double valorTotal;
-
-    private String status = "RECEBIDO";
-    private String responsavelRegistro;
+    private Double descontoPercentual;
+    private Double valorFinal;
+    private String status;
+    private String usuarioEntrada;
     private LocalDateTime dataHoraEntrada;
-    private String responsavelSaida;
+    private String usuarioSaida;
     private LocalDateTime dataHoraSaida;
     private String justificativaCancelamento;
-
-    public Pedido() {
-        this.dataHoraEntrada = LocalDateTime.now();
-        this.status = "RECEBIDO";
-        this.descontoPercentual = 0.0;
-    }
-
-    public void calcularValorTotal() {
-        if (this.precoUnitario == null) {
-            this.precoUnitario = 0.0;
-        }
-
-        double subtotal = this.quantidade * this.precoUnitario;
-        double desconto = subtotal * (this.descontoPercentual / 100.0);
-        this.valorTotal = Math.max(0.0, subtotal - desconto);
-    }
 
     public String getId() {
         return id;
@@ -57,6 +50,14 @@ public class Pedido {
 
     public void setClienteId(String clienteId) {
         this.clienteId = clienteId;
+    }
+
+    public String getNomeCliente() {
+        return nomeCliente;
+    }
+
+    public void setNomeCliente(String nomeCliente) {
+        this.nomeCliente = nomeCliente;
     }
 
     public String getTipoPizza() {
@@ -91,12 +92,12 @@ public class Pedido {
         this.precoUnitario = precoUnitario;
     }
 
-    public Double getDescontoPercentual() {
-        return descontoPercentual;
+    public List<itemPedido> getItens() {
+        return itens;
     }
 
-    public void setDescontoPercentual(Double descontoPercentual) {
-        this.descontoPercentual = descontoPercentual;
+    public void setItens(List<itemPedido> itens) {
+        this.itens = itens;
     }
 
     public Double getValorTotal() {
@@ -107,6 +108,22 @@ public class Pedido {
         this.valorTotal = valorTotal;
     }
 
+    public Double getDescontoPercentual() {
+        return descontoPercentual;
+    }
+
+    public void setDescontoPercentual(Double descontoPercentual) {
+        this.descontoPercentual = descontoPercentual;
+    }
+
+    public Double getValorFinal() {
+        return valorFinal;
+    }
+
+    public void setValorFinal(Double valorFinal) {
+        this.valorFinal = valorFinal;
+    }
+
     public String getStatus() {
         return status;
     }
@@ -115,12 +132,12 @@ public class Pedido {
         this.status = status;
     }
 
-    public String getResponsavelRegistro() {
-        return responsavelRegistro;
+    public String getUsuarioEntrada() {
+        return usuarioEntrada;
     }
 
-    public void setResponsavelRegistro(String responsavelRegistro) {
-        this.responsavelRegistro = responsavelRegistro;
+    public void setUsuarioEntrada(String usuarioEntrada) {
+        this.usuarioEntrada = usuarioEntrada;
     }
 
     public LocalDateTime getDataHoraEntrada() {
@@ -131,12 +148,12 @@ public class Pedido {
         this.dataHoraEntrada = dataHoraEntrada;
     }
 
-    public String getResponsavelSaida() {
-        return responsavelSaida;
+    public String getUsuarioSaida() {
+        return usuarioSaida;
     }
 
-    public void setResponsavelSaida(String responsavelSaida) {
-        this.responsavelSaida = responsavelSaida;
+    public void setUsuarioSaida(String usuarioSaida) {
+        this.usuarioSaida = usuarioSaida;
     }
 
     public LocalDateTime getDataHoraSaida() {
@@ -153,5 +170,31 @@ public class Pedido {
 
     public void setJustificativaCancelamento(String justificativaCancelamento) {
         this.justificativaCancelamento = justificativaCancelamento;
+    }
+
+    // Métodos de Conveniência (Aliases) para evitar erros de compilação no Service
+
+    public void setDesconto(Double desconto) {
+        this.descontoPercentual = desconto;
+    }
+
+    public Double getDesconto() {
+        return this.descontoPercentual;
+    }
+
+    public void setUsuarioResponsavelSaida(String usuarioResponsavelSaida) {
+        this.usuarioSaida = usuarioResponsavelSaida;
+    }
+
+    public String getUsuarioResponsavelSaida() {
+        return this.usuarioSaida;
+    }
+
+    public void setJustificativa(String justificativa) {
+        this.justificativaCancelamento = justificativa;
+    }
+
+    public String getJustificativa() {
+        return this.justificativaCancelamento;
     }
 }

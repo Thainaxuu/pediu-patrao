@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <title>Lista de Pedidos</title>
 </head>
@@ -11,9 +12,19 @@
         <h2 class="fw-bold mb-0">
             <i class="bi bi-bag me-2 text-primary"></i>Pedidos
         </h2>
+        <button type="button" class="btn btn-primary"
+                data-bs-toggle="modal" data-bs-target="#novoPedidoModal"
+                sec:authorize="hasAnyRole('GERENTE','ATENDENTE')">
+            <i class="bi bi-plus-lg me-1"></i> Novo Pedido
+        </button>
     </div>
 
     <!-- Mensagens de feedback -->
+    <div class="alert alert-success alert-dismissible fade show" th:if="${param.criado}" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <span>Pedido registrado com sucesso!</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
     <div class="alert alert-success alert-dismissible fade show" th:if="${sucesso}" role="alert">
         <i class="bi bi-check-circle-fill me-2"></i>
         <span th:text="${sucesso}"></span>
@@ -27,40 +38,72 @@
 
     <!-- Tabela -->
     <div class="card shadow-sm">
-        <div class="card-body p-0">
+        <div class="card-body p-0 table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-dark">
                     <tr>
-                        <th class="ps-4">ID</th>
-                        <th>Cliente ID</th>
-                        <th>Tipo de Pizza</th>
-                        <th>Sabor</th>
-                        <th>Quantidade</th>
+                        <th class="ps-4">Cliente</th>
+                        <th>Itens</th>
+                        <th>Subtotal</th>
+                        <th>Desconto</th>
+                        <th>Total</th>
                         <th>Status</th>
+                        <th>Entrada</th>
+                        <th>Responsável</th>
+                        <th sec:authorize="hasRole('GERENTE')">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     <!-- Lista vazia -->
                     <tr th:if="${#lists.isEmpty(pedidos)}">
-                        <td colspan="6" class="text-center text-muted py-5">
+                        <td colspan="9" class="text-center text-muted py-5">
                             <i class="bi bi-inbox fs-3 d-block mb-2"></i>
                             Nenhum pedido encontrado.
                         </td>
                     </tr>
                     <!-- Linhas -->
-                    <tr th:each="pedido : ${pedidos}">
-                        <td class="ps-4 text-muted" th:text="${pedido.id}"></td>
-                        <td th:text="${pedido.clienteId}"></td>
-                        <td th:text="${pedido.tipoPizza}"></td>
-                        <td th:text="${pedido.sabor}"></td>
-                        <td th:text="${pedido.quantidade}"></td>
+                    <tr th:each="pedido : ${pedidos}"
+                        th:with="st=${pedido.status != null ? pedido.status : ''}">
+                        <td class="ps-4"
+                            th:text="${pedido.nomeCliente != null ? pedido.nomeCliente : pedido.clienteId}"></td>
+                        <td>
+                            <div th:if="${#lists.isEmpty(pedido.itens)}"
+                                 th:text="${pedido.quantidade} + 'x ' + ${pedido.tipoPizza ?: ''} + ' ' + ${pedido.sabor ?: ''}"></div>
+                            <div th:each="item : ${pedido.itens}"
+                                 th:text="${item.quantidade} + 'x ' + ${item.produtoId ?: ''}"></div>
+                        </td>
+                        <td th:text="'R$ ' + ${#numbers.formatDecimal(pedido.valorTotal ?: 0, 1, 'POINT', 2, 'COMMA')}"></td>
+                        <td th:text="${#numbers.formatDecimal(pedido.descontoPercentual ?: 0, 1, 'POINT', 2, 'COMMA')} + '%'"></td>
+                        <td class="fw-semibold"
+                            th:text="'R$ ' + ${#numbers.formatDecimal(pedido.valorFinal ?: 0, 1, 'POINT', 2, 'COMMA')}"></td>
                         <td>
                             <span class="badge"
-                                  th:classappend="${pedido.status == 'ENTREGUE'} ? 'bg-success' :
-                                                  (${pedido.status == 'CANCELADO'} ? 'bg-danger' :
-                                                  (${pedido.status == 'EM_PREPARO'} ? 'bg-warning text-dark' : 'bg-secondary'))"
-                                  th:text="${pedido.status}">
+                                  th:classappend="${st == 'FINALIZADO'} ? 'bg-success' :
+                                                  (${st == 'CANCELADO'} ? 'bg-danger' :
+                                                  (${st == 'EM_PREPARACAO'} ? 'bg-warning text-dark' :
+                                                  (${st == 'PRONTO'} ? 'bg-info text-dark' :
+                                                  (${st == 'SAIU_PARA_ENTREGA' or st == 'RETIRADO'} ? 'bg-primary' : 'bg-secondary'))))"
+                                  th:text="${st}">
                             </span>
+                        </td>
+                        <td th:text="${#temporals.format(pedido.dataHoraEntrada, 'dd/MM/yyyy HH:mm')}"></td>
+                        <td th:text="${pedido.usuarioEntrada}"></td>
+                        <td sec:authorize="hasRole('GERENTE')">
+                            <div th:if="${st == 'RECEBIDO' or st == 'EM_PREPARACAO' or st == 'PRONTO'}"
+                                 class="d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-success"
+                                        data-bs-toggle="modal" data-bs-target="#descontoModal"
+                                        th:attr="data-pedido-id=${pedido.id}, data-pedido-ref=${pedido.nomeCliente != null ? pedido.nomeCliente : pedido.clienteId}">
+                                    <i class="bi bi-percent me-1"></i>Desconto
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                        data-bs-toggle="modal" data-bs-target="#cancelarModal"
+                                        th:attr="data-pedido-id=${pedido.id}, data-pedido-ref=${pedido.nomeCliente != null ? pedido.nomeCliente : pedido.clienteId}">
+                                    <i class="bi bi-x-circle me-1"></i>Cancelar
+                                </button>
+                            </div>
+                            <span class="text-muted small"
+                                  th:unless="${st == 'RECEBIDO' or st == 'EM_PREPARACAO' or st == 'PRONTO'}">—</span>
                         </td>
                     </tr>
                 </tbody>
@@ -71,7 +114,148 @@
         </div>
     </div>
 
+    <!-- Modal: Novo Pedido -->
+    <div class="modal fade" id="novoPedidoModal" tabindex="-1" aria-labelledby="novoPedidoModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/pedidos/salvar}" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="novoPedidoModalLabel">
+                            <i class="bi bi-bag-plus me-2 text-primary"></i>Novo Pedido
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+
+                        <div class="mb-3">
+                            <label for="clienteId" class="form-label">Cliente</label>
+                            <select class="form-select" id="clienteId" name="clienteId" required
+                                    onchange="this.form.nomeCliente.value = this.value ? this.options[this.selectedIndex].text : ''">
+                                <option value="">Selecione um cliente</option>
+                                <option th:each="c : ${clientes}" th:value="${c.id}" th:text="${c.nome}"></option>
+                            </select>
+                            <input type="hidden" name="nomeCliente" value="">
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="tipoPizza" class="form-label">Tipo de Pizza</label>
+                                <input type="text" class="form-control" id="tipoPizza" name="tipoPizza" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="sabor" class="form-label">Sabor</label>
+                                <input type="text" class="form-control" id="sabor" name="sabor" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="quantidade" class="form-label">Quantidade</label>
+                                <input type="number" class="form-control" id="quantidade" name="quantidade"
+                                       min="1" step="1" value="1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="precoUnitario" class="form-label">Preço Unitário (R$)</label>
+                                <input type="number" class="form-control" id="precoUnitario" name="precoUnitario"
+                                       min="0.01" step="0.01" placeholder="0,00" required>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>Registrar Pedido
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Aplicar Desconto (somente GERENTE) -->
+    <div class="modal fade" id="descontoModal" tabindex="-1" aria-labelledby="descontoModalLabel" aria-hidden="true"
+         sec:authorize="hasRole('GERENTE')">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="descontoForm" th:action="@{/pedidos/PEDIDO_ID/desconto}" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="descontoModalLabel">
+                            <i class="bi bi-percent me-2 text-success"></i>Aplicar Desconto
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted mb-3">
+                            Pedido de <strong class="pedido-ref"></strong>
+                        </p>
+                        <label for="percentual" class="form-label">Desconto (%)</label>
+                        <input type="number" class="form-control" id="percentual" name="percentual"
+                               min="0" max="20" step="0.01" required>
+                        <div class="form-text">Máximo de 20% sobre o valor total. Só é possível antes da saída do pedido.</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+                        <button type="submit" class="btn btn-success">Aplicar Desconto</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Cancelar Pedido (somente GERENTE) -->
+    <div class="modal fade" id="cancelarModal" tabindex="-1" aria-labelledby="cancelarModalLabel" aria-hidden="true"
+         sec:authorize="hasRole('GERENTE')">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="cancelarForm" th:action="@{/pedidos/PEDIDO_ID/cancelar}" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="cancelarModalLabel">
+                            <i class="bi bi-x-circle me-2 text-danger"></i>Cancelar Pedido
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted mb-3">
+                            Pedido de <strong class="pedido-ref"></strong>. O registro é mantido, mas o status passa
+                            para CANCELADO e não pode mais ser alterado.
+                        </p>
+                        <label for="justificativa" class="form-label">Justificativa</label>
+                        <textarea class="form-control" id="justificativa" name="justificativa"
+                                  rows="3" maxlength="500" required></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+                        <button type="submit" class="btn btn-danger">Confirmar Cancelamento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            function prepararModal(modalId, formId) {
+                var modal = document.getElementById(modalId);
+                var form = document.getElementById(formId);
+                if (!modal) { return; }
+                if (!form) { return; }
+                var modelo = form.getAttribute('action');
+                modal.addEventListener('show.bs.modal', function (event) {
+                    var botao = event.relatedTarget;
+                    if (!botao) { return; }
+                    form.reset();
+                    form.setAttribute('action', modelo.replace('PEDIDO_ID', encodeURIComponent(botao.getAttribute('data-pedido-id'))));
+                    var rotulo = modal.querySelector('.pedido-ref');
+                    if (rotulo) { rotulo.textContent = botao.getAttribute('data-pedido-ref'); }
+                });
+            }
+            prepararModal('descontoModal', 'descontoForm');
+            prepararModal('cancelarModal', 'cancelarForm');
+        })();
+    </script>
+
 </div>
 
 </body>
-</html>
+</html>sss
